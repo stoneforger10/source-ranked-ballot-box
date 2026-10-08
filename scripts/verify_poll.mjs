@@ -3,7 +3,7 @@ import crypto from 'node:crypto';
 import {createClient} from 'genlayer-js';
 import {studionet} from 'genlayer-js/chains';
 
-const [address, creator, id, expectedState, expectedWinners = ''] = process.argv.slice(2);
+const [address, creator, id, expectedState, expectedWinners = '', expectedOrder = ''] = process.argv.slice(2);
 const canonical = value => {
   if (Array.isArray(value)) return '[' + value.map(canonical).join(',') + ']';
   if (value !== null && typeof value === 'object') return '{' + Object.keys(value).sort()
@@ -44,6 +44,7 @@ try {
     if (ballot.state === 'COUNTED') {
       assert.equal(ballot.uncertain, false);
       assert.deepEqual([...ballot.order].sort((a, b) => a - b), poll.definition.choices.map((_, i) => i));
+      if (expectedOrder) assert.deepEqual(ballot.order, expectedOrder.split(',').map(Number));
       counted.push(voter);
       for (let i = 0; i < ballot.order.length; i++) for (let j = i + 1; j < ballot.order.length; j++)
         matrix[ballot.order[i]][ballot.order[j]]++;

@@ -71,6 +71,8 @@ python -m venv .venv
 .venv/Scripts/genvm-lint check contracts/SourceRankedBallotBox.py --json
 .venv/Scripts/python -m pytest tests -q
 npm ci
+node --test tests/transport.test.cjs
+npm install -g genlayer@0.39.2
 genlayer network set studionet
 genlayer account use YOUR_ENCRYPTED_TEST_KEYSTORE
 genlayer deploy --contract contracts/SourceRankedBallotBox.py
@@ -94,3 +96,21 @@ genlayer call ADDRESS get_poll --args POLL_KEY
 Publish fixtures first and pin their URLs to the exact source commit. Hash complete raw bytes, not normalized text. Inspect FINALIZED **and execution SUCCESS and majority agreement**, then read stored state and recompute roots. Failed executions are negative tests, not completed transitions. See LIVE_PROOFS.md and SUBMISSION.md when published; missing proof entries mean a scenario was not proven onchain.
 
 Security assumptions and residual risks: [SECURITY.md](SECURITY.md). Consensus mistakes can change an irreversible ballot and result. Do not use for governmental elections, binding financial decisions or sensitive governance.
+
+## Optional Windows RPC transport
+
+If Node HTTPS cannot reach StudioNet, `node --require ./scripts/windows_read_transport.cjs scripts/check.mjs ...` uses native PowerShell for public reads. Request bodies travel over stdin to avoid Windows' command-line length limit. The read shim never signs or broadcasts.
+
+For an already-signed gasless StudioNet transaction, the separate `windows_broadcast_once.cjs` requires explicit process-local `STUDIO_NATIVE_BROADCAST=1`. Signing still occurs inside the CLI's encrypted keystore. The shim forwards each signed payload once and caches success **and failure** so SDK retries cannot resend it. A timeout can mean an unknown outcome: inspect public account history/nonce and recover its receipt before launching another process. Never paste entire raw CLI receipts or signed payloads; use the metadata-only verifier.
+
+```powershell
+genlayer network set studionet
+genlayer account use YOUR_ENCRYPTED_TEST_KEYSTORE
+genlayer account unlock
+$cli=Join-Path (npm root -g) 'genlayer/dist/index.js'
+$env:STUDIO_NATIVE_BROADCAST='1'
+node --require ./scripts/windows_read_transport.cjs --require ./scripts/windows_broadcast_once.cjs $cli deploy --contract contracts/SourceRankedBallotBox.py
+Remove-Item Env:STUDIO_NATIVE_BROADCAST
+```
+
+The transport unit test mocks responses and sends no transaction. It is not live deployment evidence.
