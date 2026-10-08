@@ -1,0 +1,6 @@
+Public preference ballot
+
+The three choices are Reliability, Affordability and Portability.
+Portability is my least preferred choice. Although I value affordability,
+I strictly prefer Reliability to Affordability.
+These preferences constitute my complete strict ranking of all three choices.

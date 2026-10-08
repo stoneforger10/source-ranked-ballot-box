@@ -1,0 +1,8 @@
+{
+  "name": "source-ranked-ballot-box",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Source-interpreted ranked ballots and immutable strongest-path results on GenLayer",
+  "dependencies": {"genlayer-js": "1.1.8"}
+}
