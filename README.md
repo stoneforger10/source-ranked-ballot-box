@@ -71,7 +71,7 @@ python -m venv .venv
 .venv/Scripts/genvm-lint check contracts/SourceRankedBallotBox.py --json
 .venv/Scripts/python -m pytest tests -q
 npm ci
-node --test tests/transport.test.cjs
+node --test tests/transport.test.cjs tests/cli_string_args.test.cjs
 npm install -g genlayer@0.39.2
 genlayer network set studionet
 genlayer account use YOUR_ENCRYPTED_TEST_KEYSTORE
@@ -82,18 +82,23 @@ Use an encrypted, dedicated test wallet; StudioNet is gasless. Nonzero native va
 
 ## Demo and evidence
 
+StudioNet: [0x0775Be69F8a555EDF8df4b2eCb2722cEC90E22f5](https://explorer-studio.genlayer.com/address/0x0775Be69F8a555EDF8df4b2eCb2722cEC90E22f5). Eight successful finalized receipts cover deployment, hash-mismatch withholding, a strict-ranking winner and tied-preference abstention/EMPTY. Deployed source matches the published contract; stored results were independently reconstructed. [Proof matrix and limitations](LIVE_PROOFS.md). Synthetic single-voter demonstrations only.
+
 `examples/strict.txt` expresses Reliability over Affordability, with Portability last, despite prose mentioning them in another order. `examples/tied.txt` expressly ties its first two choices; it must abstain, never invent a strict rank. Both are synthetic public preferences from this repository, not independent third-party observations or multi-person elections.
 
 ```powershell
 $deadline=[DateTimeOffset]::UtcNow.ToUnixTimeSeconds()+3600
-genlayer write ADDRESS open_poll --args demo 'Reliability;Affordability;Portability' VOTER_ADDRESS $deadline
-genlayer call ADDRESS poll_key --args VOTER_ADDRESS demo
+$cli=Join-Path (npm root -g) 'genlayer/dist/index.js'
+node --require ./scripts/cli_string_args.cjs $cli write ADDRESS open_poll --args demo 'Reliability;Affordability;Portability' text#VOTER_ADDRESS $deadline
+node --require ./scripts/cli_string_args.cjs $cli call ADDRESS poll_key --args text#VOTER_ADDRESS demo
 genlayer write ADDRESS cast_source --args POLL_KEY attempt1 PINNED_FIXTURE_URL RAW_SHA256
 genlayer write ADDRESS finalize --args POLL_KEY
 genlayer call ADDRESS get_poll --args POLL_KEY
 ```
 
 Publish fixtures first and pin their URLs to the exact source commit. Hash complete raw bytes, not normalized text. Inspect FINALIZED **and execution SUCCESS and majority agreement**, then read stored state and recompute roots. Failed executions are negative tests, not completed transitions. See LIVE_PROOFS.md and SUBMISSION.md when published; missing proof entries mean a scenario was not proven onchain.
+
+Node 24+ is required for the optional `cli_string_args.cjs` loader hook. GenLayer CLI 0.39.2 coerces a standalone hexadecimal address into an address-typed argument, even when the contract expects a roster string. Prefix string arguments with `text#` when using this process-local hook; it strips that prefix before encoding. It neither edits the installed CLI nor changes contract/signing code. The compatibility test uses a synthetic parser and sends no transactions.
 
 Security assumptions and residual risks: [SECURITY.md](SECURITY.md). Consensus mistakes can change an irreversible ballot and result. Do not use for governmental elections, binding financial decisions or sensitive governance.
 
